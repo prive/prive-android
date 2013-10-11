@@ -33,8 +33,37 @@ public class XMPPCertPins
     };
 
     
-    public final static String[] PINLIST = {XMPPCertPins.TALKGOOGLE1,XMPPCertPins.TALKGOOGLE2, XMPPCertPins.DUKGO1,XMPPCertPins.DUKGO2, XMPPCertPins.CHATFACEBOOK1,XMPPCertPins.CHATFACEBOOK2, XMPPCertPins.JABBERCCCDE1,XMPPCertPins.JABBERCCCDE2,XMPPCertPins.JABBERCCCDE3, XMPPCertPins.BINARYPARADOX};
+    public final static String[] PINLIST = {XMPPCertPins.DUKGO1,XMPPCertPins.DUKGO2, XMPPCertPins.KARIZMAIM1, XMPPCertPins.KARIZMAIM2, XMPPCertPins.KARIZMAIM3};
 
+
+/*
+# Connecting to karizma.im [1 of 6 hosts]
+## Found 3 pinnable certs in chain
+### Certificate 1
+SubjectDN: CN=karizma.im, OU=PositiveSSL, OU=Domain Control Validated
+IssuerDN: CN=PositiveSSL CA 2, O=COMODO CA Limited, L=Salford, ST=Greater Manchester, C=GB
+Fingerprint: 186CE15153E390FE21026F0E609D248DC3124DF7
+SPKI Pin: C7DDED416148DA0D49C66E8EC08013D3FEDBD6E5
+
+### Certificate 2
+SubjectDN: CN=PositiveSSL CA 2, O=COMODO CA Limited, L=Salford, ST=Greater Manchester, C=GB
+IssuerDN: CN=AddTrust External CA Root, OU=AddTrust External TTP Network, O=AddTrust AB, C=SE
+Fingerprint: 94807B1C788DD2FCBE19C8481CE41CFAB8A4C17F
+SPKI Pin: 2F166F7029EAD47C3F1AFF275F0E6E816EAE9FAA
+
+### Certificate 3
+SubjectDN: CN=AddTrust External CA Root, OU=AddTrust External TTP Network, O=AddTrust AB, C=SE
+IssuerDN: CN=AddTrust External CA Root, OU=AddTrust External TTP Network, O=AddTrust AB, C=SE
+Fingerprint: 02FAF3E291435468607857694DF5E45B68851868
+SPKI Pin: 4F9C7D21799CAD0ED8B90C579F1A0299E790F387
+*/
+    
+       public final static String KARIZMAIM1 = "C7DDED416148DA0D49C66E8EC08013D3FEDBD6E5";
+       public final static String KARIZMAIM2 = "2F166F7029EAD47C3F1AFF275F0E6E816EAE9FAA";
+       public final static String KARIZMAIM3 = "4F9C7D21799CAD0ED8B90C579F1A0299E790F387";
+    
+    
+    
     
 /*
 ## Certificate 0 ##
