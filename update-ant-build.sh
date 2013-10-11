@@ -1,6 +1,6 @@
 #!/bin/sh
 
-target="android-17"
+target="android-18"
 
 # make sure your Android SDK tools path is set in SDK_BASE
 android update lib-project --path external/ActionBarSherlock/actionbarsherlock --target $target
@@ -12,11 +12,12 @@ android update lib-project --path external/SlidingMenu/library --target $target
 android update lib-project --path external/SlideListView/library --target $target
 android update lib-project --path external/AndroidEmojiInput/library --target $target
 
-android update project --path . --name Gibberbot --target android-17 --subprojects
+android update project --path . --name Gibberbot --target android-18 --subprojects
 
 cp libs/android-support-v4.jar external/OnionKit/libonionkit/libs/android-support-v4.jar
 cp libs/android-support-v4.jar external/ActionBarSherlock/actionbarsherlock/libs/android-support-v4.jar
 cp libs/android-support-v4.jar external/SlidingMenu/library/libs/android-support-v4.jar
 cp libs/android-support-v4.jar external/cacheword/cachewordlib/libs/android-support-v4.jar
+cp libs/android-support-v4.jar external/AndroidEmojiInput/library/libs/android-support-v4.jar
 
 cp libs/sqlcipher.jar external/cacheword/cachewordlib/libs/sqlcipher.jar
