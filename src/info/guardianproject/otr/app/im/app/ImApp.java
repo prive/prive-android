@@ -17,8 +17,6 @@
 
 package info.guardianproject.otr.app.im.app;
 
-import info.guardianproject.cacheword.CacheWordActivityHandler;
-import info.guardianproject.cacheword.SQLCipherOpenHelper;
 import info.guardianproject.otr.app.Broadcaster;
 import info.guardianproject.otr.app.im.IChatSession;
 import info.guardianproject.otr.app.im.IChatSessionManager;
@@ -35,7 +33,7 @@ import info.guardianproject.otr.app.im.plugin.ImPluginInfo;
 import info.guardianproject.otr.app.im.provider.Imps;
 import info.guardianproject.otr.app.im.service.ImServiceConstants;
 import info.guardianproject.util.AssetUtil;
-import info.guardianproject.util.LogCleaner;
+import info.guardianproject.util.Debug;
 import info.guardianproject.util.PRNGFixes;
 
 import java.util.ArrayList;
@@ -94,6 +92,8 @@ public class ImApp extends Application {
     public static final String DEFAULT_TIMEOUT_CACHEWORD = "-1"; //one day
     
     public static final String CACHEWORD_PASSWORD_KEY = "pkey";
+    public static final String CLEAR_PASSWORD_KEY = "clear_key";
+
     public static final String NO_CREATE_KEY = "nocreate";
     
     //ACCOUNT SETTINGS Imps defaults
@@ -237,6 +237,7 @@ public class ImApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        Debug.onAppStart();
         
         PRNGFixes.apply(); //Google's fix for SecureRandom bug: http://android-developers.blogspot.com/2013/08/some-securerandom-thoughts.html
         
@@ -362,7 +363,7 @@ public class ImApp extends Application {
     public synchronized void startImServiceIfNeed(boolean isBoot) {
         if (Log.isLoggable(LOG_TAG, Log.DEBUG))
             log("start ImService");
-
+        
         Intent serviceIntent = new Intent();
         serviceIntent.setComponent(ImServiceConstants.IM_SERVICE_COMPONENT);
         serviceIntent.putExtra(ImServiceConstants.EXTRA_CHECK_AUTO_LOGIN, isBoot);
@@ -428,44 +429,6 @@ public class ImApp extends Application {
         }
     }
     
-  
-    private CacheWordActivityHandler mCacheWord;
-    private boolean mNoCacheWord;
-
-    public boolean isCacheWord() {
-        return mCacheWord != null;
-    }
-    
-    public void setCacheWord(CacheWordActivityHandler cacheWord)
-    {
-        if (mNoCacheWord) {
-            throw new IllegalStateException("CacheWord state conflict");
-        }
-        mCacheWord = cacheWord;
-    }
-    
-    public void setNoCacheWord() {
-        if (mCacheWord != null) {
-            throw new IllegalStateException("CacheWord state conflict");
-        }
-        mNoCacheWord = true;
-    }
-    
-    public void initOtrStoreKey ()
-    {
-        if ( getRemoteImService() != null)
-        {
-            String pkey = SQLCipherOpenHelper.encodeRawKey(mCacheWord == null ? new byte[32] : mCacheWord.getEncryptionKey());
-    
-            try {
-               getRemoteImService().unlockOtrStore(pkey);
-             } catch (RemoteException e) {
-               
-                 LogCleaner.error(ImApp.LOG_TAG, "eror initializing otr key", e);
-             }
-        }
-    }
-
     private ServiceConnection mImServiceConn = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             if (Log.isLoggable(LOG_TAG, Log.DEBUG))
@@ -474,9 +437,6 @@ public class ImApp extends Application {
             mImService = IRemoteImService.Stub.asInterface(service);
             fetchActiveConnections();
             
-            if (mNoCacheWord || (mCacheWord != null && mCacheWord.getEncryptionKey() != null))
-                initOtrStoreKey();
-
             synchronized (mQueue) {
                 for (Message msg : mQueue) {
                     msg.sendToTarget();

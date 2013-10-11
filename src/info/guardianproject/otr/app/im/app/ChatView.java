@@ -218,6 +218,7 @@ public class ChatView extends LinearLayout {
     private static final long SHOW_TIME_STAMP_INTERVAL = 30 * 1000; // 1 minute
     private static final long SHOW_DELIVERY_INTERVAL = 5 * 1000; // 10 seconds
     private static final long DEFAULT_QUERY_INTERVAL = 1000;
+    private static final long FAST_QUERY_INTERVAL = 100;
     private static final int QUERY_TOKEN = 10;
 
     // Async QueryHandler
@@ -313,7 +314,7 @@ public class ChatView extends LinearLayout {
         @Override
         public void onIncomingMessage(IChatSession ses,
                 info.guardianproject.otr.app.im.engine.Message msg) {
-            scheduleRequery(DEFAULT_QUERY_INTERVAL);
+            scheduleRequery(FAST_QUERY_INTERVAL);
 
             mRemoteAddress = msg.getFrom();
           //  mRemoteAddressString = msg.getFrom().getAddress();
@@ -332,20 +333,17 @@ public class ChatView extends LinearLayout {
         @Override
         public void onSendMessageError(IChatSession ses,
                 info.guardianproject.otr.app.im.engine.Message msg, ImErrorInfo error) {
-            scheduleRequery(DEFAULT_QUERY_INTERVAL);
+            scheduleRequery(FAST_QUERY_INTERVAL);
         }
 
         @Override
         public void onIncomingReceipt(IChatSession ses, String packetId) throws RemoteException {
-            scheduleRequery(DEFAULT_QUERY_INTERVAL);
+            scheduleRequery(FAST_QUERY_INTERVAL);
         }
 
         @Override
         public void onStatusChanged(IChatSession ses) throws RemoteException {
             scheduleRequery(DEFAULT_QUERY_INTERVAL);
-         
-            
-            
         };
         
         @Override
@@ -392,6 +390,8 @@ public class ChatView extends LinearLayout {
             }
         }
     };
+
+    private boolean mIsListening;
 
     static final void log(String msg) {
         Log.d(ImApp.LOG_TAG, "<ChatView> " + msg);
@@ -564,7 +564,6 @@ public class ChatView extends LinearLayout {
             public void onClick(View v) {
                  
                 ChatView.this.closeChatSession();
-                mActivity.refreshChatViews();
             }
             
         });
@@ -680,7 +679,6 @@ public class ChatView extends LinearLayout {
             
 
             ChatView.this.closeChatSession();
-            mActivity.refreshChatViews();
             
             return true;
         }
@@ -690,6 +688,7 @@ public class ChatView extends LinearLayout {
     }
 
     public void startListening() {
+        mIsListening = true;
         if (mViewType == VIEW_TYPE_CHAT) {
             Cursor cursor = getMessageCursor();
             if (cursor == null) {
@@ -713,18 +712,10 @@ public class ChatView extends LinearLayout {
        // }
         
         cancelRequery();
-        if (mViewType == VIEW_TYPE_CHAT && mCurrentChatSession != null) {
-            try {
-                mCurrentChatSession.markAsRead();
-            } catch (RemoteException e) {
-                
-                mHandler.showServiceErrorAlert(e.getLocalizedMessage());
-                LogCleaner.error(ImApp.LOG_TAG, "send message error",e); 
-            }
-        }
         unregisterChatListener();
         unregisterForConnEvents();
         unregisterChatSessionListener();
+        mIsListening = false;
     }
 
     
@@ -1021,7 +1012,8 @@ public class ChatView extends LinearLayout {
         mComposeMessage.setEnabled(enabled);
         mSendButton.setEnabled(enabled);
         if (enabled) {
-            mComposeMessage.requestFocus();
+            // This can steal focus from the fragment that's in front of the user
+            //mComposeMessage.requestFocus();
         } else {
             mHistory.setAdapter(null);
         }
@@ -1574,7 +1566,9 @@ public class ChatView extends LinearLayout {
     }
 
     private void userActionDetected() {
-        if (getChatSession() != null) {
+        // Check that we have a chat session and that our fragment is resumed
+        // The latter filters out bogus TextWatcher events on restore from saved
+        if (getChatSession() != null && mIsListening) {
             try {
                 getChatSession().markAsRead();
               

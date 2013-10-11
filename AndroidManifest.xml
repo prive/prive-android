@@ -2,7 +2,7 @@
     package="info.guardianproject.otr.app.im" 
     android:sharedUserLabel="@string/perm_label"
      android:versionName="12.5"
-     android:versionCode="83"
+     android:versionCode="84"
      android:installLocation="auto"     
      >     
     <supports-screens
@@ -284,7 +284,7 @@ android:anyDensity="true"
                 android:configChanges="orientation|keyboardHidden|screenSize"
                 android:windowSoftInputMode="stateUnchanged"
                android:exported="false"
-               android:launchMode="singleTop"
+               android:launchMode="singleTask"
                 >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

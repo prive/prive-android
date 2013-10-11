@@ -24,7 +24,6 @@ import info.guardianproject.otr.app.im.engine.ImConnection;
 import info.guardianproject.otr.app.im.provider.Imps;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.UpdateManager;
-import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentUris;
@@ -81,11 +80,12 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
     private SharedPreferences mPrefs = null;
     
     private CacheWordActivityHandler mCacheWord = null;
+    private boolean mDoLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         mApp = (ImApp)getApplication();
         mHandler = new MyHandler(this);
 
@@ -98,15 +98,17 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         
       
         mDoSignIn = getIntent().getBooleanExtra("doSignIn", true);
+        mDoLock = getIntent().getBooleanExtra("doLock", false);
         
-        // Try to open with empty password
-        if (!mApp.isCacheWord() && openEncryptedStores(null, false))
-            mApp.setNoCacheWord();
+        mApp.maybeInit(this);
+        
+        if (!mDoLock && openEncryptedStores(null, false))
+            // DB already open, or unencrypted
+            // openEncryptedStores has finished()
+            return;
         else
             connectToCacheWord ();
 
-        mApp.maybeInit(this);
-        
         checkForCrashes();
         
         checkForUpdates();
@@ -119,8 +121,6 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         
         mCacheWord = new CacheWordActivityHandler(this, (ICacheWordSubscriber)this);
         
-        mApp.setCacheWord(mCacheWord);
-        
         mCacheWord.connectToService();
         
     }
@@ -132,7 +132,9 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         try {
             Uri uri = Imps.Provider.CONTENT_URI_WITH_ACCOUNT;
             
-            Builder builder = uri.buildUpon().appendQueryParameter(ImApp.CACHEWORD_PASSWORD_KEY, pKey);
+            Builder builder = uri.buildUpon();
+            if (pKey != null)
+                builder.appendQueryParameter(ImApp.CACHEWORD_PASSWORD_KEY, pKey);
             if (!allowCreate)
                 builder = builder.appendQueryParameter(ImApp.NO_CREATE_KEY, "1");
             uri = builder.build();
@@ -500,7 +502,11 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
     public void onCacheWordUninitialized() {
         Log.d(ImApp.LOG_TAG,"cache word uninit");
         
-        showLockScreen();
+        if (mDoLock) {
+            Log.d(ImApp.LOG_TAG, "cacheword lock requested but already uninitialized");
+        } else {
+            showLockScreen();
+        }
         finish();
     }
 
@@ -516,16 +522,26 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
     
     @Override
     public void onCacheWordLocked() {
-     
-        showLockScreen();
+        if (mDoLock) {
+            Log.d(ImApp.LOG_TAG, "cacheword lock requested but already locked");
+        } else {
+            showLockScreen();
+        }
         finish();
     }
 
     @Override
     public void onCacheWordOpened() {
+        if (mDoLock) {
+            Log.d(ImApp.LOG_TAG, "cacheword lock");
+            mCacheWord.manuallyLock();
+            finish();
+            return;
+        }
        Log.d(ImApp.LOG_TAG,"cache word opened");
        
-       openEncryptedStores(mCacheWord.getEncryptionKey(), true);
+       byte[] encryptionKey = mCacheWord.getEncryptionKey();
+       openEncryptedStores(encryptionKey, true);
 
        int defaultTimeout = Integer.parseInt(mPrefs.getString("pref_cacheword_timeout",ImApp.DEFAULT_TIMEOUT_CACHEWORD));       
 
@@ -536,8 +552,6 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         String pkey = (key != null) ? SQLCipherOpenHelper.encodeRawKey(key) : "";
         
         if (cursorUnlocked(pkey, allowCreate)) {
-            mApp.initOtrStoreKey();
-
             doOnResume();
             return true;
         } else {

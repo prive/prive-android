@@ -16,9 +16,6 @@
 
 package info.guardianproject.otr.app.im.app;
 
-import info.guardianproject.cacheword.CacheWordActivityHandler;
-import info.guardianproject.cacheword.ICacheWordSubscriber;
-import info.guardianproject.cacheword.SQLCipherOpenHelper;
 import info.guardianproject.otr.OtrAndroidKeyManagerImpl;
 import info.guardianproject.otr.OtrDebugLogger;
 import info.guardianproject.otr.app.im.IImConnection;
@@ -40,13 +37,11 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -65,17 +60,9 @@ import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.google.zxing.integration.android.IntentIntegrator;
 
-public class AccountListActivity extends SherlockListActivity implements View.OnCreateContextMenuListener, ICacheWordSubscriber, ProviderListItem.SignInManager {
+public class AccountListActivity extends SherlockListActivity implements View.OnCreateContextMenuListener, ProviderListItem.SignInManager {
 
     private static final String TAG = ImApp.LOG_TAG;
-
-    private static final int ID_SIGN_IN = Menu.FIRST + 1;
-    private static final int ID_SIGN_OUT = Menu.FIRST + 2;
-    private static final int ID_EDIT_ACCOUNT = Menu.FIRST + 3;
-    private static final int ID_REMOVE_ACCOUNT = Menu.FIRST + 4;
-//    private static final int ID_SIGN_OUT_ALL = Menu.FIRST + 5;
-    private static final int ID_ADD_ACCOUNT = Menu.FIRST + 6;
-    private static final int ID_VIEW_CONTACT_LIST = Menu.FIRST + 7;
 
     private ProviderAdapter mAdapter;
     private Cursor mProviderCursor;
@@ -83,8 +70,6 @@ public class AccountListActivity extends SherlockListActivity implements View.On
     private SimpleAlertHandler mHandler;
 
     private SignInHelper mSignInHelper;
-
-    private CacheWordActivityHandler mCacheWord;
 
     private static final String[] PROVIDER_PROJECTION = {
                                                          Imps.Provider._ID,
@@ -124,12 +109,8 @@ public class AccountListActivity extends SherlockListActivity implements View.On
         mHandler = new MyHandler(this);
         mSignInHelper = new SignInHelper(this);
 
-        String pkey = SQLCipherOpenHelper.encodeRawKey(new byte[32]);
-        if (!mApp.isCacheWord() && initProviderCursor(pkey)) {
-            mApp.setNoCacheWord();
-        } else {
-            mCacheWord = new CacheWordActivityHandler(this, (ICacheWordSubscriber)this);
-            mApp.setCacheWord(mCacheWord);
+        if (!initProviderCursor()) {
+            onDBLocked();
         }
         
         ViewGroup godfatherView = (ViewGroup) this.getWindow().getDecorView();
@@ -163,8 +144,6 @@ public class AccountListActivity extends SherlockListActivity implements View.On
     protected void onPause() {
         mHandler.unregisterForBroadcastEvents();
         
-        if (mCacheWord != null)
-            mCacheWord.onPause();
         super.onPause();
     }
 
@@ -186,15 +165,6 @@ public class AccountListActivity extends SherlockListActivity implements View.On
         ThemeableActivity.setBackgroundImage(this);
         
         mHandler.registerForBroadcastEvents();
-        if (mCacheWord != null) {
-            mCacheWord.onResume();
-        
-            if (!mCacheWord.isLocked())
-            {
-                onCacheWordOpened();
-
-            }
-        }
         
         checkForCrashes();
         
@@ -237,7 +207,7 @@ public class AccountListActivity extends SherlockListActivity implements View.On
         mProviderCursor.moveToFirst();
         while (!mProviderCursor.isAfterLast())
         {
-            long cAccountId = mProviderCursor.getLong(this.ACTIVE_ACCOUNT_ID_COLUMN);
+            long cAccountId = mProviderCursor.getLong(ACTIVE_ACCOUNT_ID_COLUMN);
             
             try
             {
@@ -258,7 +228,7 @@ public class AccountListActivity extends SherlockListActivity implements View.On
         mProviderCursor.moveToFirst();
         while (!mProviderCursor.isAfterLast())
         {
-            long cAccountId = mProviderCursor.getLong(this.ACTIVE_ACCOUNT_ID_COLUMN);
+            long cAccountId = mProviderCursor.getLong(ACTIVE_ACCOUNT_ID_COLUMN);
             
             if (cAccountId == accountId)
                 break;
@@ -283,16 +253,16 @@ public class AccountListActivity extends SherlockListActivity implements View.On
     {
 
         Intent intent = new Intent(this, NewChatActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
         intent.putExtra(ImServiceConstants.EXTRA_INTENT_ACCOUNT_ID, accountId);
+        
         startActivity(intent);
     
     }
 
     private void handlePanic() {
-        
         signOutAll ();
-        mApp.forceStopImService();
-        
     }
  
     private void signOutAll() {
@@ -306,15 +276,28 @@ public class AccountListActivity extends SherlockListActivity implements View.On
                 long accountId = mProviderCursor.getLong(ACTIVE_ACCOUNT_ID_COLUMN);
                 signOut(accountId);
             }
-            
-            mApp.stopImServiceIfInactive();
-            
-            if (mCacheWord != null)
-                mCacheWord.manuallyLock();
-            
-            finish();
         }
         
+        goLock();
+   }
+
+    private void goLock() {
+        mHandler.postDelayed(new Runnable()
+        {
+            public void run ()
+            {
+                mApp.forceStopImService();
+                
+            }
+        }, 2000l);
+        
+        Intent intent = new Intent(getApplicationContext(), WelcomeActivity.class);
+        // Request lock
+        intent.putExtra("doLock", true);
+        // Clear the backstack
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
     }
 
     public void signOut(final long accountId) {
@@ -325,7 +308,7 @@ public class AccountListActivity extends SherlockListActivity implements View.On
             mProviderCursor.moveToFirst();
             while (!mProviderCursor.isAfterLast())
             {
-                long cAccountId = mProviderCursor.getLong(this.ACTIVE_ACCOUNT_ID_COLUMN);
+                long cAccountId = mProviderCursor.getLong(ACTIVE_ACCOUNT_ID_COLUMN);
                 
                 if (cAccountId == accountId)
                     break;
@@ -381,7 +364,7 @@ public class AccountListActivity extends SherlockListActivity implements View.On
             showExistingAccountListDialog();
             return true;
         case R.id.menu_create_account:
-            showSetupAccountForm(helper.getProviderNames().get(0), null, null, true, null);
+            showSetupAccountForm(helper.getProviderNames().get(0), null, null, true, null,false);
             return true;
         case R.id.menu_settings:
             Intent sintent = new Intent(this, SettingActivity.class);
@@ -439,10 +422,16 @@ public class AccountListActivity extends SherlockListActivity implements View.On
                 {           
                     showGoogleAccountListDialog();
                 }
-                else
+                else if (pos == 1) //xmpp
                 {
                     //otherwise support the actual plugin-type
-                    showSetupAccountForm(mAccountList[pos],null, null, false,mAccountList[pos]);
+                    showSetupAccountForm(mAccountList[pos],null, null, false,mAccountList[pos],false);
+                }
+                else if (pos == 2) //zeroconf
+                {
+                    String username = "";
+                    String passwordPlaceholder = "password";//zeroconf doesn't need a password
+                    showSetupAccountForm(mAccountList[pos],username,passwordPlaceholder, false,mAccountList[pos],true);
                 }
             }
         });
@@ -492,7 +481,7 @@ private Handler mHandlerGoogleAuth = new Handler ()
                            String password = GTalkOAuth2.NAME + ':' + GTalkOAuth2.getGoogleAuthTokenAllow(mNewUser, getApplicationContext(), AccountListActivity.this,mHandlerGoogleAuth);
                    
                            //use the XMPP type plugin for google accounts, and the .NAME "X-GOOGLE-TOKEN" as the password
-                            showSetupAccountForm(helper.getProviderNames().get(0), mNewUser,password, false, getString(R.string.google_account));
+                            showSetupAccountForm(helper.getProviderNames().get(0), mNewUser,password, false, getString(R.string.google_account),false);
                         }
                     };
                     thread.start();
@@ -504,7 +493,7 @@ private Handler mHandlerGoogleAuth = new Handler ()
 
     }
     
-    public void showSetupAccountForm (String providerType, String username, String token, boolean createAccount, String formTitle)
+    public void showSetupAccountForm (String providerType, String username, String token, boolean createAccount, String formTitle, boolean hideTor)
     {
         long providerId = helper.createAdditionalProvider(providerType);//xmpp
         mApp.resetProviderSettings(); //clear cached provider list
@@ -523,6 +512,8 @@ private Handler mHandlerGoogleAuth = new Handler ()
         
         if (formTitle != null)
             intent.putExtra("title", formTitle);
+        
+        intent.putExtra("hideTor", hideTor);
         
         intent.putExtra("register", createAccount);
         
@@ -786,47 +777,17 @@ private Handler mHandlerGoogleAuth = new Handler ()
     }
 
 
-    @Override
-    public void onCacheWordUninitialized() {
-       // this will never happen
-    }
-
-
-    @Override
-    public void onCacheWordLocked() {
+    public void onDBLocked() {
      
         Intent intent = new Intent(getApplicationContext(), WelcomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
     }
 
-
-
-    @Override
-    public void onCacheWordOpened() {
-       
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-        int defaultTimeout = Integer.parseInt(prefs.getString("pref_cacheword_timeout",ImApp.DEFAULT_TIMEOUT_CACHEWORD));
-        
-        mCacheWord.setTimeoutMinutes(defaultTimeout);  
-        
-        
-        String pkey = SQLCipherOpenHelper.encodeRawKey(mCacheWord.getEncryptionKey());
-
-            
-        initProviderCursor (pkey);
-        
-    }
-    
-    
-    private boolean initProviderCursor (String pkey)
+    private boolean initProviderCursor()
     {
         Uri uri = Imps.Provider.CONTENT_URI_WITH_ACCOUNT;
 
-        uri = uri.buildUpon().appendQueryParameter(ImApp.CACHEWORD_PASSWORD_KEY, pkey).build();
-      
         mProviderCursor = managedQuery(uri, PROVIDER_PROJECTION,
                 Imps.Provider.CATEGORY + "=?" + " AND " + Imps.Provider.ACTIVE_ACCOUNT_USERNAME + " NOT NULL" /* selection */,
                 new String[] { ImApp.IMPS_CATEGORY } /* selection args */,
@@ -843,11 +804,11 @@ private Handler mHandlerGoogleAuth = new Handler ()
     
     private void checkForCrashes() {
         CrashManager.register(this, ImApp.HOCKEY_APP_ID);
-      }
+    }
 
-      private void checkForUpdates() {
+    private void checkForUpdates() {
         // Remove this for store builds!
         UpdateManager.register(this, ImApp.HOCKEY_APP_ID);
-      }
-      
+    }
+
 }
