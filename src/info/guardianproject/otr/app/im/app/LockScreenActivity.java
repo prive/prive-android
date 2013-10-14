@@ -56,7 +56,8 @@ public class LockScreenActivity extends SherlockActivity implements ICacheWordSu
         
         mApp = (ImApp)getApplication();
         
-        getSherlock().getActionBar().hide();
+        if(getSherlock().getActionBar() != null)
+            getSherlock().getActionBar().hide();
         
         setContentView(R.layout.activity_lock_screen);
         

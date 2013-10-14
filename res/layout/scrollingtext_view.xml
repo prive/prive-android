@@ -19,7 +19,7 @@
 		    android:padding="3px">
 <TextView android:text="" 
     	android:textColor="#ffffff" android:id="@+id/WizardTextBody" android:layout_width="wrap_content" android:layout_height="wrap_content"
-    	            android:fontFamily="sans-serif-light"
+    	           
     	
     	></TextView>
 

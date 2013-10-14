@@ -64,7 +64,7 @@
                     android:ellipsize="marquee"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content" 
-                    android:fontFamily="sans-serif-light"
+                    
                     />
                 <TextView android:id="@+id/conversations"
                     android:textAppearance="?android:attr/textAppearanceMedium"
@@ -73,7 +73,7 @@
                     android:paddingLeft="5dip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" 
-                    android:fontFamily="sans-serif-light"
+                    
                     />
             </LinearLayout>
 
@@ -83,7 +83,7 @@
                 android:singleLine="true"
                 android:layout_width="fill_parent"
                android:layout_height="wrap_content"
-               android:fontFamily="sans-serif-light"
+               
                />
         </LinearLayout>
            <Switch

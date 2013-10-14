@@ -74,7 +74,7 @@
             android:inputType="textCapSentences|textAutoCorrect"
             android:selectAllOnFocus="true"
             android:singleLine="true"            
-                android:fontFamily="sans-serif-light"
+               
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_marginTop="3dp"
              />
@@ -86,7 +86,7 @@
             android:paddingLeft="1dip"
             android:paddingTop="1dip"
             android:singleLine="true"
-                android:fontFamily="sans-serif-light"
+                
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:visibility="gone"
             android:layout_marginTop="3dp"
@@ -105,7 +105,7 @@
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:hint="type to filter"
-             android:fontFamily="sans-serif-light"
+             
              android:layout_alignParentBottom="true"
             android:textAppearance="?android:attr/textAppearanceSmall"
               />
@@ -128,7 +128,7 @@
 	    android:gravity="center"
 	    android:layout_gravity="center_vertical"
 	    android:textSize="24dp"
-	    		            android:fontFamily="sans-serif-light"
+	    		           
 
 	    />
              

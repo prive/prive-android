@@ -44,7 +44,7 @@
 	        android:layout_height="wrap_content"
 	        android:layout_weight="1"
 	         android:autoLink="all"
-	          android:fontFamily="sans-serif-light"
+	          
 	          android:padding="3dp"
 	         />
 	    
@@ -73,7 +73,7 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:layout_weight="1"
-	         android:fontFamily="sans-serif-light"
+	         
 	         android:value="00:00pm"
 	         />
 

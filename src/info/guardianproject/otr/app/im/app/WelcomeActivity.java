@@ -94,7 +94,8 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
        
         mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         
-        this.getSupportActionBar().hide();
+        if(this.getSupportActionBar() != null)
+            this.getSupportActionBar().hide();
         
       
         mDoSignIn = getIntent().getBooleanExtra("doSignIn", true);

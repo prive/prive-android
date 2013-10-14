@@ -48,7 +48,7 @@
         android:background="#aaffffff"        
                     android:maxLines="1"
         android:textColor="#333333"        
-                android:fontFamily="sans-serif-light"
+              
             android:textAppearance="?android:attr/textAppearanceSmall"
         />
 </FrameLayout>

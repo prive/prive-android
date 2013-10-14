@@ -47,7 +47,7 @@
             android:padding="3sp"
             android:textColor="#aaff0000"
             android:text="@string/disconnected_warning"
-            android:fontFamily="sans-serif-light"
+           
              />
         
          <Switch
@@ -159,7 +159,7 @@
         android:layout_width="32dip"
         android:layout_height="32dip"
         android:background="@drawable/ad_selectable_background"
-        android:fontFamily="sans-serif-light"
+        
       
         android:paddingBottom="5sp"
         android:src="@drawable/ic_btn_round_more_normal" />
@@ -183,8 +183,7 @@
             android:imeOptions="actionSend|flagNoEnterAction"
             android:maxLines="4"
             android:hint="@string/compose_hint"
-             android:fontFamily="sans-serif-light"
-             
+                          
          android:layout_alignParentLeft="true"
             />
            
@@ -195,7 +194,7 @@
         android:layout_alignParentRight="true"
         android:layout_toRightOf="@+id/composeMessage"
         android:background="@drawable/ad_selectable_background"
-        android:fontFamily="sans-serif-light"
+        
         android:paddingBottom="3sp"
         android:paddingLeft="5sp"
         android:paddingRight="5sp"
@@ -219,7 +218,7 @@
         android:id="@+id/btnProfile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"        
-        android:fontFamily="sans-serif-light"      
+              
         android:src="@drawable/avatar_unknown"
         android:padding="8dip"
         
@@ -228,7 +227,7 @@
         android:id="@+id/btnSendFile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"        
-        android:fontFamily="sans-serif-light"      
+             
         android:src="@drawable/content_new_attachment"
         android:padding="8dip"
         
@@ -237,7 +236,7 @@
         android:id="@+id/btnSendPicture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"        
-        android:fontFamily="sans-serif-light"      
+              
         android:src="@drawable/content_new_picture"
         android:padding="8dip"
         
@@ -248,7 +247,7 @@
         android:id="@+id/btnEndChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"        
-        android:fontFamily="sans-serif-light"      
+             
         android:src="@drawable/content_discard"
         android:padding="8dip"
         
