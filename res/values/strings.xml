@@ -833,5 +833,12 @@
     <string name="fingerprint_for_you">Fingerprint for you</string>
     
     <string name="fingerprint_for_">"Fingerprint for "</string>
+    
+    
+    <!-- Dtlbox memorizing strings -->
+    <string name="mtm_accept_cert">Unknown Certificate</string>
+    <string name="mtm_decision_ok">Ok</string>
+
+    <string name="mtm_notification">Certificate Verification</string>
 </resources>
 

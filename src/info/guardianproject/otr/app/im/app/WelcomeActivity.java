@@ -24,6 +24,7 @@ import info.guardianproject.otr.app.im.engine.ImConnection;
 import info.guardianproject.otr.app.im.provider.Imps;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.UpdateManager;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentUris;
@@ -82,7 +83,8 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
     private CacheWordActivityHandler mCacheWord = null;
     private boolean mDoLock;
 
-    @Override
+    @SuppressLint("NewApi")
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -95,7 +97,7 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         
         if(this.getSupportActionBar() != null)
-            this.getSupportActionBar().hide();
+            this.getActionBar().hide();
         
       
         mDoSignIn = getIntent().getBooleanExtra("doSignIn", true);
@@ -189,9 +191,6 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
         if (mCacheWord != null)
             mCacheWord.onPause();
     }
-
-
-
 
 
     @Override
