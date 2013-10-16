@@ -90,16 +90,29 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
             throws IOException {
         
         if (_instance == null && mKeyStorePassword != null) {
-            File f = new File(context.getApplicationContext().getFilesDir(), FILE_KEYSTORE_ENCRYPTED);
-            _instance = new OtrAndroidKeyManagerImpl(f,mKeyStorePassword);
+            File fKeyStore;
+            
+            fKeyStore = new File(context.getApplicationContext().getFilesDir(), FILE_KEYSTORE_UNENCRYPTED);
+            if (fKeyStore.exists())
+            {
+                _instance = new OtrAndroidKeyManagerImpl(fKeyStore,null);
+            }
+            else
+            {
+                fKeyStore = new File(context.getApplicationContext().getFilesDir(), FILE_KEYSTORE_ENCRYPTED);
+                _instance = new OtrAndroidKeyManagerImpl(fKeyStore,mKeyStorePassword);
+            }
         }
 
         return _instance;
     }
 
     private OtrAndroidKeyManagerImpl(File filepath, String password) throws IOException {
-        this.store = new SimplePropertiesStore(filepath, password, false);
-//        upgradeStore();
+        
+        if (password == null)
+            store = new SimplePropertiesStore(filepath);
+        else
+            store = new SimplePropertiesStore(filepath, password, false);
 
         cryptoEngine = new OtrCryptoEngineImpl();
         
@@ -107,6 +120,9 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
 
     /*
     private void upgradeStore() {
+        
+        LogCleaner.warn(ImApp.LOG_TAG, "upgrading keystore");
+        
         String version = store.getPropertyString("version");
 
         if (version == null || new Version(version).compareTo(new Version("1.0.0")) < 0) {
@@ -125,36 +141,46 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
                 }
             }
             
-            File fileOldKeystore = new File(FILE_KEYSTORE_UNENCRYPTED);
-            if (fileOldKeystore.exists())
-            {
-                try {
-                    SimplePropertiesStore storeOldKeystore = new SimplePropertiesStore(fileOldKeystore);
-                    
-                    Enumeration<Object> enumKeys = storeOldKeystore.getKeys();
-                    
-                    while(enumKeys.hasMoreElements())
-                    {
-                        String key = (String)enumKeys.nextElement();
-                        store.setProperty(key, storeOldKeystore.getPropertyString(key));
-                        
-                    }
-                    
-                    store.save();
-                    
-                    fileOldKeystore.delete();
-                    
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-            }
-            
             // This will save
             store.setProperty("version", CURRENT_VERSION.toString());
         }
-    }*/
+        
 
+        File fileOldKeystore = new File(FILE_KEYSTORE_UNENCRYPTED);
+        if (fileOldKeystore.exists())
+        {
+            LogCleaner.warn(ImApp.LOG_TAG, "upgrading unencrypted keystore");
+            try {
+                SimplePropertiesStore storeOldKeystore = new SimplePropertiesStore(fileOldKeystore);
+                
+                Enumeration<Object> enumKeys = storeOldKeystore.getKeys();
+                
+                while(enumKeys.hasMoreElements())
+                {
+                    String key = (String)enumKeys.nextElement();
+                    LogCleaner.warn(ImApp.LOG_TAG, "importing key: " + key);
+                    store.setProperty(key, storeOldKeystore.getPropertyString(key));
+                    
+                }
+                
+                store.save();
+                
+                fileOldKeystore.delete();
+                
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            LogCleaner.warn(ImApp.LOG_TAG, "unencrypted keystore not found");
+
+        }
+        
+    }
+    */
+    
     static class SimplePropertiesStore implements OtrKeyManagerStore {
         
         private Properties mProperties = new Properties();
@@ -187,11 +213,6 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
                 loadOpenSSL(password);
         }
 
-        public void reload () throws IOException
-        {
-            loadOpenSSL(mPassword);
-        }
-        
         private void loadAES(final String password) throws IOException 
         {
             String decoded;
@@ -212,7 +233,10 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
         public boolean save ()
         {
             try {
-                saveOpenSSL (mPassword, mStoreFile);
+                if (mPassword != null)
+                    saveOpenSSL(mPassword, mStoreFile);
+                else
+                    savePlain(mStoreFile);
                 return true;
             } catch (IOException e) {
                 LogCleaner.error(ImApp.LOG_TAG, "error saving keystore", e);
@@ -238,6 +262,20 @@ public class OtrAndroidKeyManagerImpl extends IOtrKeyManager.Stub implements Otr
             OpenSSLPBEOutputStream encOS = new OpenSSLPBEOutputStream(baos, STORE_ALGORITHM, 1, password.toCharArray());
             mProperties.store(encOS, null);
             encOS.flush();
+            
+            FileOutputStream fos = new FileOutputStream(fileStore);
+            fos.write(baos.toByteArray());
+            fos.flush();
+            fos.close();
+
+        }
+        
+        private void savePlain(File fileStore) throws IOException
+        {
+            // Encrypt these bytes
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mProperties.store(baos, null);
+            baos.flush();
             
             FileOutputStream fos = new FileOutputStream(fileStore);
             fos.write(baos.toByteArray());
