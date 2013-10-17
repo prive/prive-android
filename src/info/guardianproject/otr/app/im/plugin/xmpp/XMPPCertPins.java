@@ -33,7 +33,7 @@ public class XMPPCertPins
     };
 
     
-    public final static String[] PINLIST = {XMPPCertPins.DUKGO1,XMPPCertPins.DUKGO2, XMPPCertPins.KARIZMAIM1, XMPPCertPins.KARIZMAIM2, XMPPCertPins.KARIZMAIM3};
+    public final static String[] PINLIST = {XMPPCertPins.DUKGO1,XMPPCertPins.DUKGO2, XMPPCertPins.KARIZMAIM1, XMPPCertPins.KARIZMAIM2, XMPPCertPins.KARIZMAIM3, XMPPCertPins.PRIVEIM1};
 
 
 /*
@@ -63,7 +63,14 @@ SPKI Pin: 4F9C7D21799CAD0ED8B90C579F1A0299E790F387
        public final static String KARIZMAIM3 = "4F9C7D21799CAD0ED8B90C579F1A0299E790F387";
     
     
-    
+
+//       ### Certificate 1
+//       SubjectDN: CN=priveim.com, OU=Domain Control Validated - RapidSSL(R), OU=See www.rapidssl.com/resources/cps (c)13, OU=GT37941983, SERIALNUMBER=gqIOLaBQNqTLJjmPz7BN2cl4vCcIqPfC
+//       IssuerDN: CN=RapidSSL CA, O="GeoTrust, Inc.", C=US
+//       Fingerprint: 01A3A9694BF737516CCF18CC56471C437A696937
+//       SPKI Pin: 69B0CAF3EE5D9033C509E253AA5338080837CCA6
+
+       public final static String PRIVEIM1 = "69B0CAF3EE5D9033C509E253AA5338080837CCA6";
     
 /*
 ## Certificate 0 ##
