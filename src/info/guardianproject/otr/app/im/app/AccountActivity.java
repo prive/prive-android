@@ -15,7 +15,6 @@
 
 package info.guardianproject.otr.app.im.app;
 
-import info.guardianproject.onionkit.ui.OrbotHelper;
 import info.guardianproject.otr.IOtrChatSession;
 import info.guardianproject.otr.app.im.IImConnection;
 import info.guardianproject.otr.app.im.R;
@@ -29,6 +28,7 @@ import info.guardianproject.otr.app.im.provider.Imps.AccountStatusColumns;
 import info.guardianproject.otr.app.im.provider.Imps.CommonPresenceColumns;
 import info.guardianproject.otr.app.im.service.ImServiceConstants;
 import info.guardianproject.util.LogCleaner;
+import ru.dtlbox.custom.CustomOrbotHelper;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -341,11 +341,12 @@ public class AccountActivity extends Activity {
                 
                 if (mUseTor.isChecked())
                 {
-                    OrbotHelper oh = new OrbotHelper(AccountActivity.this);
+                    CustomOrbotHelper oh = new CustomOrbotHelper(AccountActivity.this);
                     if (!oh.isOrbotRunning())
                     {
-                        oh.requestOrbotStart(AccountActivity.this);
-                        return;
+//                        oh.requestOrbotStart(AccountActivity.this);
+                        if (oh.orbotStart(AccountActivity.this))
+                            Log.i(TAG, "orbot start correctly");
                     }
                 }
                 
@@ -504,24 +505,25 @@ public class AccountActivity extends Activity {
     private void updateUseTor(boolean useTor) {
         checkUserChanged();
     
-        OrbotHelper orbotHelper = new OrbotHelper(this);
+//        OrbotHelper orbotHelper = new OrbotHelper(this);
         Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(
                 getContentResolver(), mProviderId, false /* don't keep updated */, null /* no handler */);
 
         try {
-            if (useTor && (!orbotHelper.isOrbotInstalled()))
-            {
-                //Toast.makeText(this, "Orbot app is not installed. Please install from Google Play or from https://guardianproject.info/releases", Toast.LENGTH_LONG).show();
-                
-                orbotHelper.promptToInstall(this);
-                
-                mUseTor.setChecked(false);
-                settings.setUseTor(false);
-            }
-            else
-            {
+//            if (useTor && (!orbotHelper.isOrbotInstalled()))
+//            {
+//                //Toast.makeText(this, "Orbot app is not installed. Please install from Google Play or from https://guardianproject.info/releases", Toast.LENGTH_LONG).show();
+//                
+//                orbotHelper.promptToInstall(this);
+//                
+//                mUseTor.setChecked(false);
+//                settings.setUseTor(false);
+//            }
+//            else
+//            {
+                // set use tor anyway
                 settings.setUseTor(useTor);
-            }
+//            }
             
             settingsForDomain(settings.getDomain(),settings.getPort());
         } finally {
