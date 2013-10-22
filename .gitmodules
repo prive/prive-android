@@ -22,3 +22,6 @@
 [submodule "external/AndroidEmojiInput"]
 	path = external/AndroidEmojiInput
 	url = https://github.com/n8fr8/AndroidEmojiInput.git
+[submodule "external/Orbot"]
+	path = external/Orbot
+	url = https://github.com/prive/orbot.git
