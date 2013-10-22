@@ -3,9 +3,7 @@ package info.guardianproject.otr.app.im.app;
 import info.guardianproject.otr.app.im.provider.Imps;
 import info.guardianproject.otr.app.im.service.StatusBarNotifier;
 import info.guardianproject.util.Debug;
-
-import org.torproject.android.service.TorService;
-
+import ru.dtlbox.custom.CustomTorService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -52,7 +50,7 @@ public class BootCompletedListener extends BroadcastReceiver {
                     //Phase 1: Launch a service
                     Intent service = new Intent();
                     service.setAction("onboot");
-                    service.setClass(context, TorService.class);
+                    service.setClass(context, CustomTorService.class);
                     context.startService(service);
             }
         }

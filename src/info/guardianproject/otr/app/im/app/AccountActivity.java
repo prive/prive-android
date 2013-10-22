@@ -345,7 +345,7 @@ public class AccountActivity extends Activity {
                     if (!oh.isOrbotRunning())
                     {
 //                        oh.requestOrbotStart(AccountActivity.this);
-                        if (oh.orbotStart(AccountActivity.this))
+                        if (oh.torServiceStart(AccountActivity.this))
                             Log.i(TAG, "orbot start correctly");
                     }
                 }
