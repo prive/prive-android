@@ -1,6 +1,7 @@
 package ru.dtlbox.custom;
 
 import org.torproject.android.service.TorService;
+import org.torproject.android.service.TorServiceConstants;
 
 import android.content.Intent;
 import android.util.Log;
@@ -8,11 +9,25 @@ import android.util.Log;
 public class CustomTorService extends TorService {
     
     private final static String LOG_TAG = "CustomTorService";
+    private boolean isStarted = false;
+    
+    @Override
+    public void onCreate(){
+        super.onCreate();
+        Log.i(LOG_TAG, LOG_TAG + " create");
+    }
     
     @Override
     public void onStart(Intent intent, int startId) {
         super.onStart(intent, startId);
         Log.i(LOG_TAG, LOG_TAG + " start");
+        setTorProfile(TorServiceConstants.PROFILE_ON);
+        isStarted = true;
+    }
+    
+    //check whether the service is running
+    public boolean isStarted(){
+        return isStarted;
     }
     
     @Override
