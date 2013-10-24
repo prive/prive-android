@@ -420,13 +420,11 @@ android:anyDensity="true"
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
         
         <service android:enabled="true"
-    		android:name="org.torproject.android.service.TorService" 
+    		android:name="ru.dtlbox.custom.CustomTorService" 
     		android:exported="false"
     		android:process=":remote"
     		>
 	            <intent-filter>
-	                <action android:name="org.torproject.android.service.ITorService" />
-	              	<action android:name="org.torproject.android.service.TOR_SERVICE" />
 	              	<action android:name="ru.dtlbox.TOR_SERVICE" />
             </intent-filter>
     	</service>
