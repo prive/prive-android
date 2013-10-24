@@ -132,7 +132,6 @@ public class AccountActivity extends Activity {
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        CustomOrbotHelper.setContext(getApplicationContext());
         //getWindow().requestFeature(Window.FEATURE_LEFT_ICON);
         setContentView(R.layout.account_activity);
         Intent i = getIntent();
