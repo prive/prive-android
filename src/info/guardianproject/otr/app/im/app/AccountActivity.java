@@ -6,14 +6,17 @@
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
  * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * * Unless required by applicable law or agreed to in writing, software * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
+ * http://www.apache.org/licenses/LICENSE-2.0 * Unless required by applicable
+ * law or agreed to in writing, software * distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
  */
 
 package info.guardianproject.otr.app.im.app;
+
+import org.torproject.android.service.ITorService;
+import org.torproject.android.service.TorServiceConstants;
 
 import info.guardianproject.otr.IOtrChatSession;
 import info.guardianproject.otr.app.im.IImConnection;
@@ -29,19 +32,24 @@ import info.guardianproject.otr.app.im.provider.Imps.CommonPresenceColumns;
 import info.guardianproject.otr.app.im.service.ImServiceConstants;
 import info.guardianproject.util.LogCleaner;
 import ru.dtlbox.custom.CustomOrbotHelper;
+import ru.dtlbox.custom.CustomTorService;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.provider.BaseColumns;
@@ -81,13 +89,13 @@ public class AccountActivity extends Activity {
     private static final int ACCOUNT_PROVIDER_COLUMN = 1;
     private static final int ACCOUNT_USERNAME_COLUMN = 2;
     private static final int ACCOUNT_PASSWORD_COLUMN = 3;
-    
+
     public final static String DEFAULT_SERVER_GOOGLE = "talk.l.google.com";
     public final static String DEFAULT_SERVER_FACEBOOK = "chat.facebook.com";
     public final static String DEFAULT_SERVER_JABBERORG = "hermes.jabber.org";
     public final static String DEFAULT_SERVER_DUKGO = "dukgo.com";
     public final static String ONION_JABBERCCC = "okj7xc6j2szr2y75.onion";
-    
+
     //    private static final int ACCOUNT_KEEP_SIGNED_IN_COLUMN = 4;
     //    private static final int ACCOUNT_LAST_LOGIN_STATE = 5;
 
@@ -100,12 +108,12 @@ public class AccountActivity extends Activity {
     Button mBtnSignIn;
     Button mBtnDelete;
     Spinner mSpinnerDomains;
-    
+
     Button mBtnAdvanced;
     TextView mTxtFingerprint;
 
     //Imps.ProviderSettings.QueryMap settings;
-    
+
     boolean isEdit = false;
     boolean isSignedIn = false;
 
@@ -120,23 +128,24 @@ public class AccountActivity extends Activity {
     private SignInHelper mSignInHelper;
 
     private boolean mIsNewAccount = false;
-    
+
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        CustomOrbotHelper.setContext(getApplicationContext());
         //getWindow().requestFeature(Window.FEATURE_LEFT_ICON);
         setContentView(R.layout.account_activity);
         Intent i = getIntent();
-        
+
         mIsNewAccount = getIntent().getBooleanExtra("register", false);
-        
+
         mSignInHelper = new SignInHelper(this);
         SignInHelper.SignInListener signInListener = new SignInHelper.SignInListener() {
             public void connectedToService() {
             }
+
             public void stateChanged(int state, long accountId) {
-                if (state == ImConnection.LOGGING_IN || state == ImConnection.LOGGED_IN)
-                {
+                if (state == ImConnection.LOGGING_IN || state == ImConnection.LOGGED_IN) {
                     mSignInHelper.goToAccount(accountId);
                     finish();
                 }
@@ -152,29 +161,27 @@ public class AccountActivity extends Activity {
         });
 
         mEditPass = (EditText) findViewById(R.id.edtPass);
-        
+
         mEditPassConfirm = (EditText) findViewById(R.id.edtPassConfirm);
         mSpinnerDomains = (Spinner) findViewById(R.id.spinnerDomains);
-        
-        if (mIsNewAccount)
-        {
+
+        if (mIsNewAccount) {
             mEditPassConfirm.setVisibility(View.VISIBLE);
             mSpinnerDomains.setVisibility(View.VISIBLE);
             mEditUserAccount.setHint(R.string.account_setup_new_username);
         }
-        
+
         mRememberPass = (CheckBox) findViewById(R.id.rememberPassword);
         mUseTor = (CheckBox) findViewById(R.id.useTor);
-       
 
         mBtnSignIn = (Button) findViewById(R.id.btnSignIn);
-        
+
         if (mIsNewAccount)
             mBtnSignIn.setText("Create Account");
-        
+
         mBtnAdvanced = (Button) findViewById(R.id.btnAdvanced);
         mBtnDelete = (Button) findViewById(R.id.btnDelete);
-        
+
         mRememberPass.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -182,14 +189,12 @@ public class AccountActivity extends Activity {
             }
         });
 
-        
-        mApp = (ImApp)getApplication();
+        mApp = (ImApp) getApplication();
 
         String action = i.getAction();
 
         if (i.hasExtra("isSignedIn"))
             isSignedIn = i.getBooleanExtra("isSignedIn", false);
-        
 
         final ProviderDef provider;
 
@@ -240,17 +245,13 @@ public class AccountActivity extends Activity {
             mProviderId = ContentUris.parseId(uri);
             provider = mApp.getProvider(mProviderId);
 
-            if (provider != null)
-            {
+            if (provider != null) {
                 setTitle(getResources().getString(R.string.add_account, provider.mFullName));
-    
-            }
-            else
-            {
+
+            } else {
                 finish();
             }
 
-            
         } else if (Intent.ACTION_EDIT.equals(action)) {
             if ((uri == null) || !Imps.Account.CONTENT_ITEM_TYPE.equals(cr.getType(uri))) {
                 LogCleaner.warn(ImApp.LOG_TAG, "<AccountActivity>Bad data");
@@ -279,8 +280,8 @@ public class AccountActivity extends Activity {
             mProviderId = cursor.getLong(ACCOUNT_PROVIDER_COLUMN);
             provider = mApp.getProvider(mProviderId);
 
-            Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(
-                    cr, mProviderId, false /* don't keep updated */, null /* no handler */);
+            Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(cr,
+                    mProviderId, false /* don't keep updated */, null /* no handler */);
 
             try {
                 mOriginalUserAccount = cursor.getString(ACCOUNT_USERNAME_COLUMN) + "@"
@@ -294,7 +295,6 @@ public class AccountActivity extends Activity {
                 settings.close();
                 cursor.close();
             }
-
 
         } else {
             LogCleaner.warn(ImApp.LOG_TAG, "<AccountActivity> unknown intent action " + action);
@@ -319,18 +319,17 @@ public class AccountActivity extends Activity {
                 showAdvanced();
             }
         });
-        
-        mBtnDelete.setOnClickListener(new OnClickListener()
-        {
+
+        mBtnDelete.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
-               
+
                 deleteAccount();
                 finish();
-                
+
             }
-            
+
         });
 
         mBtnSignIn.setOnClickListener(new OnClickListener() {
@@ -338,18 +337,20 @@ public class AccountActivity extends Activity {
             public void onClick(View v) {
 
                 checkUserChanged();
-                
-                if (mUseTor.isChecked())
-                {
-                    CustomOrbotHelper oh = new CustomOrbotHelper(AccountActivity.this);
-                    if (!oh.isOrbotRunning())
-                    {
-//                        oh.requestOrbotStart(AccountActivity.this);
-                        if (oh.torServiceStart(AccountActivity.this))
-                            Log.i(TAG, "orbot start correctly");
-                    }
+
+                if (mUseTor.isChecked()) {
+                    Log.i(TAG, "use tor for connect");
+                    CustomOrbotHelper cOrbotHelper = CustomOrbotHelper.getInstance();
+                    cOrbotHelper.torServiceStartAsync(AccountActivity.this);
+//                    if (!cOrbotHelper.isOrbotRunning()) {
+//                        cOrbotHelper.requestOrbotStart(AccountActivity.this);
+//                        if (cOrbotHelper.torServiceStart(AccountActivity.this))
+//                            Log.i(TAG, "orbot start correctly");
+//                        bindService(new Intent(CustomTorService.class.getName()), null,
+//                                Context.BIND_AUTO_CREATE);
+//                        cOrbotHelper.torServiceStart(AccountActivity.this);
+//                    }
                 }
-                
 
                 final String pass = mEditPass.getText().toString();
                 final String passConf = mEditPassConfirm.getText().toString();
@@ -357,22 +358,19 @@ public class AccountActivity extends Activity {
                 final boolean isActive = false; // TODO(miron) does this ever need to be true?
                 ContentResolver cr = getContentResolver();
 
-                if (mIsNewAccount)
-                {
-                    mDomain = (String)mSpinnerDomains.getSelectedItem();
+                if (mIsNewAccount) {
+                    mDomain = (String) mSpinnerDomains.getSelectedItem();
                     String fullUser = mEditUserAccount.getText().toString();
-                    
-                    if (fullUser.indexOf("@")==-1)
+
+                    if (fullUser.indexOf("@") == -1)
                         fullUser += '@' + mDomain;
-                    
+
                     if (!parseAccount(fullUser)) {
                         mEditUserAccount.selectAll();
                         mEditUserAccount.requestFocus();
                         return;
                     }
-                }
-                else
-                {
+                } else {
                     if (!parseAccount(mEditUserAccount.getText().toString())) {
                         mEditUserAccount.selectAll();
                         mEditUserAccount.requestFocus();
@@ -384,12 +382,10 @@ public class AccountActivity extends Activity {
                         rememberPass ? pass : null);
 
                 mAccountUri = ContentUris.withAppendedId(Imps.Account.CONTENT_URI, accountId);
-                
+
                 //if remember pass is true, set the "keep signed in" property to true
-                if (mIsNewAccount)
-                {
-                    if (pass.equals(passConf))
-                    {
+                if (mIsNewAccount) {
+                    if (pass.equals(passConf)) {
                         createNewAccount(mUserName, pass);
                         setAccountKeepSignedIn(rememberPass);
                         mSignInHelper.activateAccount(mProviderId, accountId);
@@ -398,20 +394,17 @@ public class AccountActivity extends Activity {
                         //isSignedIn = true;
                         //updateWidgetState();
                         finish();
+                    } else {
+                        Toast.makeText(AccountActivity.this, "Your passwords do not match",
+                                Toast.LENGTH_SHORT).show();
                     }
-                    else
-                    {
-                       Toast.makeText(AccountActivity.this, "Your passwords do not match", Toast.LENGTH_SHORT).show();
-                    }
-                }
-                else
-                {
+                } else {
                     if (isSignedIn) {
                         signOut();
                         isSignedIn = false;
                     } else {
                         setAccountKeepSignedIn(rememberPass);
-                        
+
                         if (!mOriginalUserAccount.equals(mUserName + '@' + mDomain)
                             && shouldShowTermOfUse(brandingRes)) {
                             confirmTermsOfUse(brandingRes, new DialogInterface.OnClickListener() {
@@ -423,17 +416,17 @@ public class AccountActivity extends Activity {
                         } else {
                             mSignInHelper.signIn(pass, mProviderId, accountId, isActive);
                         }
-                      
+
                         isSignedIn = true;
                     }
                     updateWidgetState();
                     setResult(RESULT_OK);
                     finish();
                 }
-                
+
             }
         });
-        
+
         mUseTor.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -442,33 +435,29 @@ public class AccountActivity extends Activity {
         });
 
         updateWidgetState();
-        
-        if (i.hasExtra("title"))
-        {
+
+        if (i.hasExtra("title")) {
             String title = i.getExtras().getString("title");
             setTitle(title);
         }
-        
-        if (i.hasExtra("newuser"))
-        {
+
+        if (i.hasExtra("newuser")) {
             String newuser = i.getExtras().getString("newuser");
             mEditUserAccount.setText(newuser);
-            
+
             parseAccount(newuser);
-            settingsForDomain(mDomain,mPort);
-            
+            settingsForDomain(mDomain, mPort);
+
         }
-        
-        if (i.hasExtra("newpass"))
-        {
+
+        if (i.hasExtra("newpass")) {
             mEditPass.setText(i.getExtras().getString("newpass"));
             mEditPass.setVisibility(View.GONE);
             mRememberPass.setChecked(true);
             mRememberPass.setVisibility(View.GONE);
         }
 
-        if (i.getBooleanExtra("hideTor", false))
-        {
+        if (i.getBooleanExtra("hideTor", false)) {
             mUseTor.setVisibility(View.GONE);
         }
 
@@ -484,16 +473,16 @@ public class AccountActivity extends Activity {
         Cursor cursor = cr.query(Imps.Account.BY_DOMAIN_URI, projection, clauses, args, null);
         return cursor;
     }
-    
+
     @Override
     protected void onDestroy() {
-       
+
         if (mSignInHelper != null)
             mSignInHelper.stop();
-                
+
         super.onDestroy();
     }
-    
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
@@ -501,65 +490,66 @@ public class AccountActivity extends Activity {
         }
         return super.onKeyDown(keyCode, event);
     }
-    
+
     private void updateUseTor(boolean useTor) {
         checkUserChanged();
-    
-//        OrbotHelper orbotHelper = new OrbotHelper(this);
+
+        //        OrbotHelper orbotHelper = new OrbotHelper(this);
         Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(
                 getContentResolver(), mProviderId, false /* don't keep updated */, null /* no handler */);
 
         try {
-//            if (useTor && (!orbotHelper.isOrbotInstalled()))
-//            {
-//                //Toast.makeText(this, "Orbot app is not installed. Please install from Google Play or from https://guardianproject.info/releases", Toast.LENGTH_LONG).show();
-//                
-//                orbotHelper.promptToInstall(this);
-//                
-//                mUseTor.setChecked(false);
-//                settings.setUseTor(false);
-//            }
-//            else
-//            {
-                // set use tor anyway
-                settings.setUseTor(useTor);
-//            }
-            
-            settingsForDomain(settings.getDomain(),settings.getPort());
+            //            if (useTor && (!orbotHelper.isOrbotInstalled()))
+            //            {
+            //                //Toast.makeText(this, "Orbot app is not installed. Please install from Google Play or from https://guardianproject.info/releases", Toast.LENGTH_LONG).show();
+            //                
+            //                orbotHelper.promptToInstall(this);
+            //                
+            //                mUseTor.setChecked(false);
+            //                settings.setUseTor(false);
+            //            }
+            //            else
+            //            {
+            // set use tor anyway
+            settings.setUseTor(useTor);
+            //            }
+
+            settingsForDomain(settings.getDomain(), settings.getPort());
         } finally {
             settings.close();
         }
     }
-/*
-    private void getOTRKeyInfo() {
 
-        if (mApp != null && FFF != null) {
-            try {
-                otrKeyManager = mApp.getRemoteImService().getOtrKeyManager(mOriginalUserAccount);
+    /*
+        private void getOTRKeyInfo() {
 
-                if (otrKeyManager == null) {
-                    mTxtFingerprint = ((TextView) findViewById(R.id.txtFingerprint));
+            if (mApp != null && FFF != null) {
+                try {
+                    otrKeyManager = mApp.getRemoteImService().getOtrKeyManager(mOriginalUserAccount);
 
-                    String localFingerprint = otrKeyManager.getLocalFingerprint();
-                    if (localFingerprint != null) {
-                        ((TextView) findViewById(R.id.lblFingerprint)).setVisibility(View.VISIBLE);
-                        mTxtFingerprint.setText(processFingerprint(localFingerprint));
+                    if (otrKeyManager == null) {
+                        mTxtFingerprint = ((TextView) findViewById(R.id.txtFingerprint));
+
+                        String localFingerprint = otrKeyManager.getLocalFingerprint();
+                        if (localFingerprint != null) {
+                            ((TextView) findViewById(R.id.lblFingerprint)).setVisibility(View.VISIBLE);
+                            mTxtFingerprint.setText(processFingerprint(localFingerprint));
+                        } else {
+                            ((TextView) findViewById(R.id.lblFingerprint)).setVisibility(View.GONE);
+                            mTxtFingerprint.setText("");
+                        }
                     } else {
-                        ((TextView) findViewById(R.id.lblFingerprint)).setVisibility(View.GONE);
-                        mTxtFingerprint.setText("");
+                        //don't need to notify people if there is nothing to show here
+    //                    Toast.makeText(this, "OTR is not initialized yet", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    //don't need to notify people if there is nothing to show here
-//                    Toast.makeText(this, "OTR is not initialized yet", Toast.LENGTH_SHORT).show();
+
+                } catch (Exception e) {
+                    Log.e(ImApp.LOG_TAG, "error on create", e);
+
                 }
-
-            } catch (Exception e) {
-                Log.e(ImApp.LOG_TAG, "error on create", e);
-
             }
-        }
 
-    }*/
+        }*/
 
     private void checkUserChanged() {
         String username = mEditUserAccount.getText().toString().trim();
@@ -568,13 +558,11 @@ public class AccountActivity extends Activity {
             //Log.i(TAG, "Username changed: " + mOriginalUserAccount + " != " + username);
             settingsForDomain(mDomain, mPort);
             mOriginalUserAccount = username;
-            
+
         }
-        
-        
-        
+
     }
-    
+
     boolean parseAccount(String userField) {
         boolean isGood = true;
         String[] splitAt = userField.trim().split("@");
@@ -602,13 +590,13 @@ public class AccountActivity extends Activity {
         }
 
         //its okay if domain is null;
-        
-//        if (mDomain == null) {
-  //          isGood = false;
-            //Toast.makeText(AccountActivity.this, 
-            //	R.string.account_wizard_no_domain_warning,
-            //	Toast.LENGTH_LONG).show();
-    //    } 
+
+        //        if (mDomain == null) {
+        //          isGood = false;
+        //Toast.makeText(AccountActivity.this, 
+        //	R.string.account_wizard_no_domain_warning,
+        //	Toast.LENGTH_LONG).show();
+        //    } 
         /*//removing requirement of a . in the domain
         else if (mDomain.indexOf(".") == -1) { 
             isGood = false;
@@ -624,7 +612,7 @@ public class AccountActivity extends Activity {
      * If we know the direct XMPP server for a domain, we should turn off DNS lookup
      * because it is slow, error prone, and a way to leak information from third parties
      */
-    void settingsForDomain(String domain,int port) {
+    void settingsForDomain(String domain, int port) {
 
         Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(
                 getContentResolver(), mProviderId, false /* don't keep updated */, null /* no handler */);
@@ -640,17 +628,15 @@ public class AccountActivity extends Activity {
         if (domain.equals("gmail.com")) {
             // Google only supports a certain configuration for XMPP:
             // http://code.google.com/apis/talk/open_communications.html
-            
+
             settings.setDoDnsSrv(false);
-            settings.setServer(DEFAULT_SERVER_GOOGLE);            
+            settings.setServer(DEFAULT_SERVER_GOOGLE);
             settings.setDomain(domain);
             settings.setPort(DEFAULT_PORT);
             settings.setRequireTls(true);
             settings.setTlsCertVerify(true);
             settings.setAllowPlainAuth(false);
-        } 
-        else if (mEditPass.getText().toString().startsWith(GTalkOAuth2.NAME))
-        {
+        } else if (mEditPass.getText().toString().startsWith(GTalkOAuth2.NAME)) {
             //this is not @gmail but IS a google account
             settings.setDoDnsSrv(false);
             settings.setServer(DEFAULT_SERVER_GOOGLE); //set the google connect server
@@ -659,12 +645,11 @@ public class AccountActivity extends Activity {
             settings.setRequireTls(true);
             settings.setTlsCertVerify(true);
             settings.setAllowPlainAuth(false);
-        }
-        else if (domain.equals("jabber.org")) {
+        } else if (domain.equals("jabber.org")) {
             settings.setDoDnsSrv(false);
-            settings.setServer(DEFAULT_SERVER_JABBERORG);            
+            settings.setServer(DEFAULT_SERVER_JABBERORG);
             settings.setDomain(domain);
-            settings.setPort(DEFAULT_PORT);            
+            settings.setPort(DEFAULT_PORT);
             settings.setRequireTls(true);
             settings.setTlsCertVerify(true);
             settings.setAllowPlainAuth(false);
@@ -676,52 +661,44 @@ public class AccountActivity extends Activity {
             settings.setRequireTls(true); //facebook TLS now seems to be on
             settings.setTlsCertVerify(true); //but cert verify can still be funky - off by default
             settings.setAllowPlainAuth(false);
-        } 
-        else if (domain.equals("jabber.ccc.de")) {
-            
-            if (settings.getUseTor())
-            {                
+        } else if (domain.equals("jabber.ccc.de")) {
+
+            if (settings.getUseTor()) {
                 settings.setDoDnsSrv(false);
                 settings.setServer(ONION_JABBERCCC);
-            }
-            else
-            {
+            } else {
                 settings.setDoDnsSrv(true);
                 settings.setServer("");
             }
-            
+
             settings.setDomain(domain);
-            settings.setPort(DEFAULT_PORT);            
+            settings.setPort(DEFAULT_PORT);
             settings.setRequireTls(true);
             settings.setTlsCertVerify(true);
             settings.setAllowPlainAuth(false);
-        }        
-        else {
-          
+        } else {
+
             settings.setDomain(domain);
             settings.setPort(port);
-            
+
             //if use Tor, turn off DNS resolution, and set Server manually from Domain
-            if (settings.getUseTor())
-            {
+            if (settings.getUseTor()) {
                 settings.setDoDnsSrv(false);
-                
+
                 //if Tor is off, and the user has not provided any values here, set to the @domain
                 if (settings.getServer() == null || settings.getServer().length() == 0)
                     settings.setServer(domain);
-            }
-            else if (settings.getServer() == null || settings.getServer().length() == 0)
-            {
+            } else if (settings.getServer() == null || settings.getServer().length() == 0) {
                 //if Tor is off, and the user has not provided any values here, then reset to nothing
                 settings.setDoDnsSrv(true);
                 settings.setServer("");
             }
-            
+
             settings.setRequireTls(true);
             settings.setTlsCertVerify(true);
             settings.setAllowPlainAuth(false);
         }
-        
+
         settings.requery();
     }
 
@@ -770,8 +747,8 @@ public class AccountActivity extends Activity {
         values.put(AccountColumns.KEEP_SIGNED_IN, 0);
         getContentResolver().update(mAccountUri, values, null, null);
 
-        mApp = (ImApp)getApplication();
-        
+        mApp = (ImApp) getApplication();
+
         mApp.callWhenServiceConnected(mHandler, new Runnable() {
             @Override
             public void run() {
@@ -814,20 +791,17 @@ public class AccountActivity extends Activity {
             mBtnSignIn.setBackgroundResource(R.drawable.btn_green);
         }
     }
-    
-    void createNewaccount (long accountId) 
-    {
-       
-            ContentValues values = new ContentValues(2);
 
-            values.put(AccountStatusColumns.PRESENCE_STATUS, CommonPresenceColumns.NEW_ACCOUNT);
-            values.put(AccountStatusColumns.CONNECTION_STATUS, Imps.ConnectionStatus.OFFLINE);
-            String where = AccountStatusColumns.ACCOUNT + "=?";
-            getContentResolver().update(Imps.AccountStatus.CONTENT_URI, values, where,
-                    new String[] { Long.toString(accountId) });
-            
-        
-       
+    void createNewaccount(long accountId) {
+
+        ContentValues values = new ContentValues(2);
+
+        values.put(AccountStatusColumns.PRESENCE_STATUS, CommonPresenceColumns.NEW_ACCOUNT);
+        values.put(AccountStatusColumns.CONNECTION_STATUS, Imps.ConnectionStatus.OFFLINE);
+        String where = AccountStatusColumns.ACCOUNT + "=?";
+        getContentResolver().update(Imps.AccountStatus.CONTENT_URI, values, where,
+                new String[] { Long.toString(accountId) });
+
     }
 
     @Override
@@ -856,8 +830,8 @@ public class AccountActivity extends Activity {
         boolean rememberPass = mRememberPass.isChecked();
         if (rememberPass && !hasNameAndPassword) {
             mRememberPass.setChecked(false);
-            rememberPass = false; 
-    
+            rememberPass = false;
+
         }
         mRememberPass.setEnabled(hasNameAndPassword);
         mRememberPass.setFocusable(hasNameAndPassword);
@@ -888,13 +862,12 @@ public class AccountActivity extends Activity {
         }
     };
 
-    private void deleteAccount ()
-    {
-      
+    private void deleteAccount() {
+
         //need to delete 
-        ((ImApp)getApplication()).deleteAccount(mAccountId, mProviderId);
+        ((ImApp) getApplication()).deleteAccount(mAccountId, mProviderId);
     }
-    
+
     private void showAdvanced() {
 
         checkUserChanged();
@@ -923,11 +896,10 @@ public class AccountActivity extends Activity {
         case android.R.id.home:
             finish();
             return true;
-            
+
         case R.id.menu_gen_key:
             otrGenKey();
             return true;
-
 
         }
         return super.onOptionsItemSelected(item);
@@ -1008,54 +980,49 @@ public class AccountActivity extends Activity {
         return out.toString();
     }
 
-    public void createNewAccount (String usernameNew, String passwordNew)
-    {
-        
+    public void createNewAccount(String usernameNew, String passwordNew) {
+
         new AsyncTask<String, Void, String>() {
-            
+
             @Override
             protected String doInBackground(String... params) {
                 Imps.ProviderSettings.QueryMap settings = new Imps.ProviderSettings.QueryMap(
                         getContentResolver(), mProviderId, false /* don't keep updated */, null /* no handler */);
 
                 try {
-                                        
+
                     settingsForDomain(mDomain, mPort, settings);
-                    
+
                     XmppConnection xmppConn = new XmppConnection(AccountActivity.this);
                     xmppConn.registerAccount(settings, params[0], params[1]);
                     // settings closed in registerAccount
                 } catch (Exception e) {
                     LogCleaner.error(ImApp.LOG_TAG, "error registering new account", e);
-                   
+
                     return e.getLocalizedMessage();
                 } finally {
-                    
+
                     settings.close();
                 }
-                
+
                 return null;
-              }
+            }
 
             @Override
             protected void onPostExecute(String result) {
                 super.onPostExecute(result);
-                
-                if (result != null)
-                {
-                    Toast.makeText(AccountActivity.this, "error creating account: " + result, Toast.LENGTH_LONG).show();
-                }
-                else
-                {
+
+                if (result != null) {
+                    Toast.makeText(AccountActivity.this, "error creating account: " + result,
+                            Toast.LENGTH_LONG).show();
+                } else {
                     AccountActivity.this.finish();
                 }
-               
+
             }
         }.execute(usernameNew, passwordNew);
-        
-        
+
     }
-   
 
     private void setAccountKeepSignedIn(final boolean rememberPass) {
         ContentValues values = new ContentValues();
