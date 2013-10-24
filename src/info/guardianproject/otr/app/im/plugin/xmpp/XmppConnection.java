@@ -950,6 +950,7 @@ public class XmppConnection extends ImConnection implements CallbackHandler {
         debug(TAG, "cert verification? " + tlsCertVerify);
 
         if (providerSettings.getUseTor()) {
+            Log.i("temp", "user " + userName + " use tor");
             setProxy(TorProxyInfo.PROXY_TYPE, TorProxyInfo.PROXY_HOST, 
                     TorProxyInfo.PROXY_PORT);
         }

@@ -1,13 +1,11 @@
 package ru.dtlbox.custom;
 
 import info.guardianproject.onionkit.ui.OrbotHelper;
+import info.guardianproject.otr.app.im.app.AccountActivity;
 
-import org.torproject.android.Orbot.DataCount;
 import org.torproject.android.service.ITorService;
-import org.torproject.android.service.ITorServiceCallback;
 import org.torproject.android.service.TorServiceConstants;
 
-import android.R;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -15,11 +13,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences.Editor;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -28,17 +22,49 @@ public class CustomOrbotHelper extends OrbotHelper {
     protected final static String LOG_TAG = "CustomOrbotHelper";
 
     public final static String INTENT_TOR_SERVICE = "ru.dtlbox.TOR_SERVICE";
+    public final static String TOR_CUSTOM_SERVICE_NAME = "CustomOrbotHelper";
 
-    ITorService mService = null;
-    private Context mContext = null;
-
-    public CustomOrbotHelper(Context context) {
-        super(context);
-        mContext = context;
-        // TODO Auto-generated constructor stub
+    private ITorService mService = null;
+    private static Context mContext = null;
+    
+    //get instance of CustomOrbotHelper
+    public static CustomOrbotHelper getInstance(){
+        if (mContext != null)
+            return SingletonHolder.instance;
+        else
+            return null;
+    }
+    
+    private static class SingletonHolder{
+        public static CustomOrbotHelper instance = new CustomOrbotHelper(mContext);
     }
 
-    public boolean torServiceStart(final Activity activity) {
+    //for nobody can use constructor directly
+    private CustomOrbotHelper(Context context) {
+        super(context);
+    }
+    
+    /**
+     * set static context for orbot helper creation
+     * this function provide to pass context into super class
+     * in super class it was used for detecting orbot application
+     */
+    public static void setContext(Context context){
+        mContext = context;
+    }
+
+    public void torServiceStartAsync(final Activity activity){
+        (new Thread(new Runnable() {
+            
+            @Override
+            public void run() {
+                torServiceStart(activity);
+            }
+        })).start();
+    }
+    
+    //try to start tor service
+    public void torServiceStart(final Activity activity) {
         Log.d(LOG_TAG, "tor service start");
         try {
             if (isOrbotInstalled()) {
@@ -51,11 +77,11 @@ public class CustomOrbotHelper extends OrbotHelper {
                     Log.i(LOG_TAG, "orbot already running");
 
             } else {
-                //                Log.i(LOG_TAG, "orbot is not installed.Trying to start custom tor service");
-                //                if (!isServiceRunning(TOR_CUSTOMSERVICE_NAME))
-                //                    activity.startService(new Intent(INTENT_TOR_SERVICE));
-                //                else
-                //                    Log.i(LOG_TAG, "custom tor service already running");
+                Log.i(LOG_TAG, "orbot is not installed.Trying to start custom tor service");
+//                if (!isServiceRunning(TOR_CUSTOM_SERVICE_NAME))
+//                    activity.startService(new Intent(INTENT_TOR_SERVICE));
+//                else
+//                    Log.i(LOG_TAG, "custom tor service already running");
                 if (mService == null)
                     bindService();
                 else
@@ -71,12 +97,19 @@ public class CustomOrbotHelper extends OrbotHelper {
         } catch (Exception e) {
             Log.e(LOG_TAG, "error during start orbot");
             e.printStackTrace();
-            return false;
         }
-        return true;
 
     }
-
+    
+    //check is any tor service running
+    public boolean isTorServiceRunning(){
+        if(isOrbotInstalled())
+            return super.isOrbotRunning();
+        else
+            return isServiceRunning(TOR_CUSTOM_SERVICE_NAME);
+    }
+    
+    //check is custom service running
     private Boolean isServiceRunning(String serviceName) {
         ActivityManager activityManager = (ActivityManager) mContext
                 .getSystemService(Context.ACTIVITY_SERVICE);
@@ -89,7 +122,13 @@ public class CustomOrbotHelper extends OrbotHelper {
         return false;
     }
 
-    private ServiceConnection mConnection = new ServiceConnection() {
+    /**
+     * Class for interacting with the main interface of the service.
+     */
+     // this is the connection that gets called back when a successfull bind occurs
+     // we should use this to activity monitor unbind so that we don't have to call
+     // bindService() a million times
+    public ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             Log.i(LOG_TAG, "onServiceConnected");
             // This is called when the connection with the service has been
@@ -99,6 +138,11 @@ public class CustomOrbotHelper extends OrbotHelper {
             // representation of that from the raw service object.
             mService = ITorService.Stub.asInterface(service);
 
+            Log.i(LOG_TAG, "on service connected");
+            
+//            if(!((CustomTorService) mService).isStarted())
+//                mContext.startService(new Intent(INTENT_TOR_SERVICE));
+            
             try {
 
                 startTor();
@@ -121,7 +165,7 @@ public class CustomOrbotHelper extends OrbotHelper {
         }
     };
 
-    private void startTor() throws RemoteException {
+    public void startTor() throws RemoteException {
 
         // this is a bit of a strange/old/borrowed code/design i used to change the service state
         // not sure it really makes sense when what we want to say is just "startTor"
@@ -135,8 +179,8 @@ public class CustomOrbotHelper extends OrbotHelper {
         //since its auto create, we prob don't ever need to call startService
         //also we should again be consistent with using either iTorService.class.getName()
         //or the variable constant       
-        mContext.bindService(new Intent(CustomTorService.class.getName()), mConnection,
-                Context.BIND_AUTO_CREATE);
+        mContext.bindService(new Intent(INTENT_TOR_SERVICE),
+                mConnection, Context.BIND_AUTO_CREATE);
 
     }
 
