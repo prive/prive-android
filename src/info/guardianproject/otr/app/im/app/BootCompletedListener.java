@@ -3,13 +3,11 @@ package info.guardianproject.otr.app.im.app;
 import info.guardianproject.otr.app.im.provider.Imps;
 import info.guardianproject.otr.app.im.service.StatusBarNotifier;
 import info.guardianproject.util.Debug;
+import ru.dtlbox.custom.CustomTorService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.net.Uri;
-import android.net.Uri.Builder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -46,8 +44,18 @@ public class BootCompletedListener extends BroadcastReceiver {
                     StatusBarNotifier sbn = new StatusBarNotifier(context);
                     sbn.notifyLocked();
                 }
+                      
+            //start custom torservice
+                
+                    //Phase 1: Launch a service
+                    Intent service = new Intent();
+                    service.setAction("onboot");
+                    service.setClass(context, CustomTorService.class);
+                    context.startService(service);
             }
         }
+        
+        
         
        
         

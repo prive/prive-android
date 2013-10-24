@@ -44,6 +44,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import ru.dtlbox.custom.CustomOrbotHelper;
+
 import android.app.Activity;
 import android.app.Application;
 import android.content.ComponentName;
@@ -238,7 +240,7 @@ public class ImApp extends Application {
     public void onCreate() {
         super.onCreate();
         Debug.onAppStart();
-        
+        CustomOrbotHelper.setContext(this);
         PRNGFixes.apply(); //Google's fix for SecureRandom bug: http://android-developers.blogspot.com/2013/08/some-securerandom-thoughts.html
         
         mBroadcaster = new Broadcaster();
