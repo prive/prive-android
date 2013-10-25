@@ -4,9 +4,6 @@
 [submodule "external/asmack"]
 	path = external/asmack
 	url = https://github.com/guardianproject/asmack.git
-[submodule "external/MemorizingTrustManager"]
-	path = external/MemorizingTrustManager
-	url = https://github.com/prive/MemorizingTrustManager.git
 [submodule "external/OnionKit"]
 	path = external/OnionKit
 	url = https://github.com/guardianproject/OnionKit.git
@@ -22,3 +19,6 @@
 [submodule "external/AndroidEmojiInput"]
 	path = external/AndroidEmojiInput
 	url = https://github.com/n8fr8/AndroidEmojiInput.git
+[submodule "MemorizingTrustManager"]
+	path = MemorizingTrustManager
+	url = https://github.com/prive/MemorizingTrustManager.git
