@@ -434,7 +434,7 @@ public class WelcomeActivity extends ThemeableActivity implements ICacheWordSubs
    
 
     void showAccounts() {
-        startActivity(new Intent(getBaseContext(), AccountListActivity.class));
+        startActivity(new Intent(getBaseContext(), RegistrationActivity.class));//AccountListActivity was here
         finish();
     }
     

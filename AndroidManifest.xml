@@ -412,7 +412,14 @@ android:anyDensity="true"
             android:configChanges="keyboardHidden|orientation|screenSize"
             
              >
+            
         </activity>
+        
+        <activity
+            android:name=".app.RegistrationActivity"
+            android:label="@string/title_activity_lock_screen"
+            android:configChanges="keyboardHidden|orientation|screenSize" />
+
           
         <service android:name="info.guardianproject.cacheword.CacheWordService" android:enabled="true" android:exported="false"
              />
